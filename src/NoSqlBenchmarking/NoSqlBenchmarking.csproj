@@ -67,6 +67,7 @@
   <ItemGroup>
     <Compile Include="Dummy.cs" />
     <Compile Include="IBenchmark.cs" />
+    <Compile Include="MongoDbBenchmark.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RavenDbBenchmark.cs" />

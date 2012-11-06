@@ -9,7 +9,7 @@ namespace NoSqlBenchmarking
     {
         void Init();
         void Save(Dummy dummy);
-        Dummy Get(Guid id);
+        Dummy Get(string id);
         void Cleanup();
     }
 }

@@ -57,6 +57,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -71,6 +72,8 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RavenDbBenchmark.cs" />
+    <Compile Include="RedisBenchmark.cs" />
+    <Compile Include="SqlServerBenchmark.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

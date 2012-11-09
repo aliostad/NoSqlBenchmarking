@@ -10,8 +10,10 @@ namespace NoSqlBenchmarking
     {
         static void Main(string[] args)
         {
-			//Test(new RavenDbBenchmark(), 1000);
-			Test(new MongoDbBenchmark(), 1000);
+			//Test(new RavenDbBenchmark(), 10000);
+			//Test(new MongoDbBenchmark(), 10000);
+			//Test(new RedisBenchmark(), 10000);
+			Test(new SqlServerBenchmark(), 10000);
         	Console.Read();
         }
 

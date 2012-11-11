@@ -14,6 +14,7 @@ namespace NoSqlBenchmarking
 			//Test(new MongoDbBenchmark(), 10000);
 			//Test(new RedisBenchmark(), 10000);
 			Test(new SqlServerBenchmark(), 10000);
+			//Test(new CassandraBenchmark(), 10000);
         	Console.Read();
         }
 

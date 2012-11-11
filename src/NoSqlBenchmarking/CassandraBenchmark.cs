@@ -24,7 +24,6 @@ namespace NoSqlBenchmarking
 					Name = DummiesKeySpace,
 				}, _context);
 				keyspace.TryCreateSelf();
-				//_context.DropColumnFamily("Dummies");
 				_context.ExecuteQuery(
 					@"
                 CREATE COLUMNFAMILY Dummies (

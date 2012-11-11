@@ -11,16 +11,81 @@ namespace NoSqlBenchmarking
     {
         static void Main(string[] args)
         {
-			Test(new RavenDbBenchmark(), 10000,
-				operations: BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
-				gatherStatistics: true);
-			//Test(new MongoDbBenchmark(), 10000);
-			//Test(new RedisBenchmark(), 10000);
-			//Test(new SqlServerBenchmark(), 10000);
-			//Test(new NoActionBenchmark(), 100000, gatherStatistics: true);
-			//Test(new CassandraBenchmark(), 10000);
-        	Console.Read();
+        	while (true)
+        	{
+				int store = TakeUserInput(@"Please choose a store: 
+1) Cassandra
+2) MongoDB
+3) RavenDB
+4) Redis
+5) SQL Server
+", 1);
+				IBenchmark benchmark = null;
+				switch (store)
+				{
+					case 1:
+						benchmark = new CassandraBenchmark();
+						break;
+					case 2:
+						benchmark = new MongoDbBenchmark();
+						break;
+					case 3:
+						benchmark = new RavenDbBenchmark();
+						break;
+					case 4:
+						benchmark = new RedisBenchmark();
+						break;
+					case 5:
+						benchmark = new SqlServerBenchmark();
+						break;
+					default:
+						benchmark = new CassandraBenchmark();
+						break;
+				}
+
+				int n = TakeUserInput("Please enter number of operations (enter empty for 10000 operations): ", 10000);
+				int gatherStats = TakeUserInput("Gather statistics every 100 operations? (enter 1 if you want stats)", 0);
+
+				try
+				{
+					Test(benchmark, n,
+					operations: BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
+					gatherStatistics: gatherStats == 1);
+
+				}
+				catch (Exception e)
+				{
+					Console.ForegroundColor = ConsoleColor.Red;
+					Console.WriteLine(e);
+				}
+
+				Console.ForegroundColor = ConsoleColor.DarkMagenta;
+				Console.WriteLine("Press <ENTER> to exit, c to continue");
+        		var read = Console.ReadKey();
+				Console.WriteLine();
+				if(read.KeyChar!='c')
+					break;
+        	}
+
         }
+
+		private static int TakeUserInput(string message, int defaultValue = 0)
+		{
+			Console.ForegroundColor = ConsoleColor.Gray;
+			Console.Write(message);
+			Console.ForegroundColor = ConsoleColor.Green;
+			var line = Console.ReadLine();
+			int i = 0;
+			if(Int32.TryParse(line, out i))
+			{
+				return i;
+			}
+			else
+			{
+				return defaultValue;
+			}
+
+		}
 
 		private static void Test(IBenchmark benchmarkRunner, int n,
 			BenchmarkOperation operations = BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
@@ -59,6 +124,9 @@ namespace NoSqlBenchmarking
 					var d2 = benchmarkRunner.Get(d.Id);
 					if (d2 == null)
 						throw new InvalidOperationException("Could not find item");
+					if(d2.Id != d.Id)
+						throw new InvalidOperationException("Has a different id: " + d2.Id);
+
 				}
 
 				if ((operations & BenchmarkOperation.GetNonExistent) == BenchmarkOperation.GetNonExistent)

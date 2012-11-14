@@ -4,11 +4,16 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace NoSqlBenchmarking
 {
     class Program
     {
+
+        private static int currentCount = 0;
+        private static int failedCount = 0;
+
         static void Main(string[] args)
         {
         	while (true)
@@ -44,13 +49,16 @@ namespace NoSqlBenchmarking
 				}
 
 				int n = TakeUserInput("Please enter number of operations (enter empty for 10000 operations): ", 10000);
-				int gatherStats = TakeUserInput("Gather statistics every 100 operations? (enter 1 if you want stats)", 0);
+                int gatherStats = TakeUserInput("Gather statistics every 100 operations? (enter 1 if you want stats)", 0);
+                int concurrency = TakeUserInput("Run multi-threaded? in which case enter number of threads", 0);
 
 				try
 				{
+                    
 					Test(benchmark, n,
-					operations: BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
-					gatherStatistics: gatherStats == 1);
+					    operations: BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
+					    gatherStatistics: gatherStats == 1, concurrency: concurrency);
+                    
 
 				}
 				catch (Exception e)
@@ -89,11 +97,10 @@ namespace NoSqlBenchmarking
 
 		private static void Test(IBenchmark benchmarkRunner, int n,
 			BenchmarkOperation operations = BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
-			bool gatherStatistics = false)
+			bool gatherStatistics = false, int concurrency = 50)
 		{
 			string benchmarker = benchmarkRunner.GetType().Name;
 			StreamWriter writer = null;
-			double totalMilliseconds = 0;
 			if(gatherStatistics)
 			{
 				writer = new StreamWriter(benchmarker + ".csv");
@@ -106,51 +113,13 @@ namespace NoSqlBenchmarking
 			Console.WriteLine("Starting benchmark with " + benchmarker);
 			Console.ForegroundColor = ConsoleColor.DarkYellow;
 			stopwatch.Start();
-			for (int i = 1; i <= n; i++)
-			{
-				var d = new Dummy()
-				        	{
-				        		Id = Guid.NewGuid().ToString("N"),
-								Blob = new byte[random.Next(4 * 1024, 20 * 1024)] // 4-20 KB
-				        	};
 
-				random.NextBytes(d.Blob);
-				if( (operations & BenchmarkOperation.Insert) == BenchmarkOperation.Insert)
-				{
-					benchmarkRunner.Save(d);					
-				}
-				if( (operations & BenchmarkOperation.Get) == BenchmarkOperation.Get)
-				{
-					var d2 = benchmarkRunner.Get(d.Id);
-					if (d2 == null)
-						throw new InvalidOperationException("Could not find item");
-					if(d2.Id != d.Id)
-						throw new InvalidOperationException("Has a different id: " + d2.Id);
+            if(concurrency>0)
+                WriteReadNTimesAsync(n, benchmarkRunner, operations, gatherStatistics, stopwatch, writer, concurrency);
+            else
+                WriteReadNTimes(n, benchmarkRunner, operations, gatherStatistics, stopwatch, writer);
 
-				}
 
-				if ((operations & BenchmarkOperation.GetNonExistent) == BenchmarkOperation.GetNonExistent)
-				{
-					var d3 = benchmarkRunner.Get(d.Id + 1);
-					if (d3 != null)
-						throw new InvalidOperationException("Found a non-existent item");
-				}
-			
-				if (i % 100 == 0)
-				{
-					Console.Write("\r" + i);
-					if(gatherStatistics)
-					{
-						var current = stopwatch.Elapsed.TotalMilliseconds;
-						writer.Write(i + ",");
-						writer.Write(current - totalMilliseconds);
-						writer.Write("\r\n");
-						totalMilliseconds = current;
-					}
-				}
-
-					
-			}
 			stopwatch.Stop();
 			Console.WriteLine();
 			Console.ForegroundColor = ConsoleColor.Yellow;
@@ -164,5 +133,125 @@ namespace NoSqlBenchmarking
 				writer.Close();
 			}
 		}
+
+        private static void WriteReadNTimesAsync(int n, IBenchmark benchmarkRunner,
+            BenchmarkOperation operations, bool gatherStatistics, 
+            Stopwatch stopwatch, StreamWriter writer, int concurrency
+            )
+        {
+            var random = new Random();
+            double totalMilliseconds = 0;
+
+            ThreadPool.SetMinThreads(concurrency, 100);
+            ThreadPool.SetMaxThreads(concurrency, 100);
+
+            Console.Write("Warming up");
+            for (int i = 0; i < concurrency; i++)
+            {
+                ThreadPool.QueueUserWorkItem((o) => Console.Write("."));
+            }
+            Thread.Sleep(2000);
+
+            Console.WriteLine("it should be OK now.");
+
+
+
+
+            for (int i = 1; i <= n; i++)
+            {
+                WriteReadDummy(benchmarkRunner, operations, random);
+
+
+                if (i % 100 == 0)
+                {
+                    Console.Write("\r" + i);
+                    if (gatherStatistics)
+                    {
+                        var current = stopwatch.Elapsed.TotalMilliseconds;
+                        writer.Write(i + ",");
+                        writer.Write(current - totalMilliseconds);
+                        writer.Write("\r\n");
+                        totalMilliseconds = current;
+                    }
+                }
+
+
+            }
+        }
+
+        private static void WriteReadNTimes(int n, IBenchmark benchmarkRunner,
+       BenchmarkOperation operations, bool gatherStatistics,
+       Stopwatch stopwatch, StreamWriter writer
+       )
+        {
+            var random = new Random();
+            double totalMilliseconds = 0;
+            failedCount = 0;
+            currentCount = 0;
+            var resetEvent = new AutoResetEvent(false);
+
+            for (int i = 0; i < n; i++)
+            {
+                ThreadPool.QueueUserWorkItem(
+                    (o) =>
+                        {
+                            try
+                            {
+                                WriteReadDummy(benchmarkRunner, operations, random);
+                                Interlocked.Increment(ref currentCount);
+                            }
+                            catch
+                            {
+                                Interlocked.Increment(ref failedCount);
+                            }
+                        }
+                    );
+            }
+
+            while (true)
+            {
+
+                resetEvent.WaitOne(1000);
+                Console.Write("\r" + currentCount);
+
+                if(currentCount == n)
+                    break;
+            }
+
+            Console.WriteLine("Failed count: " + failedCount);
+            
+        }
+
+        private static void WriteReadDummy(IBenchmark benchmarkRunner, BenchmarkOperation operations, Random random)
+        {
+
+            var d = new Dummy()
+            {
+                Id = Guid.NewGuid().ToString("N"),
+                Blob = new byte[random.Next(4 * 1024, 20 * 1024)] // 4-20 KB
+            };
+
+            random.NextBytes(d.Blob);
+            if ((operations & BenchmarkOperation.Insert) == BenchmarkOperation.Insert)
+            {
+                benchmarkRunner.Save(d);
+            }
+            if ((operations & BenchmarkOperation.Get) == BenchmarkOperation.Get)
+            {
+                var d2 = benchmarkRunner.Get(d.Id);
+                if (d2 == null)
+                    throw new InvalidOperationException("Could not find item");
+                if (d2.Id != d.Id)
+                    throw new InvalidOperationException("Has a different id: " + d2.Id);
+
+            }
+
+            if ((operations & BenchmarkOperation.GetNonExistent) == BenchmarkOperation.GetNonExistent)
+            {
+                var d3 = benchmarkRunner.Get(d.Id + 1);
+                if (d3 != null)
+                    throw new InvalidOperationException("Found a non-existent item");
+            }
+        }
     }
 }

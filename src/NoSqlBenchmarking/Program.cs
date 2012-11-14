@@ -204,6 +204,7 @@ namespace NoSqlBenchmarking
                             catch
                             {
                                 Interlocked.Increment(ref failedCount);
+                                Interlocked.Increment(ref currentCount);
                             }
                         }
                     );
@@ -214,7 +215,10 @@ namespace NoSqlBenchmarking
 
                 resetEvent.WaitOne(1000);
                 Console.Write("\r" + currentCount);
-
+                var color = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(" (" + failedCount + ")");
+                Console.ForegroundColor = color;
                 if(currentCount == n)
                     break;
             }

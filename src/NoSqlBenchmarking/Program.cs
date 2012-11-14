@@ -201,10 +201,11 @@ namespace NoSqlBenchmarking
                                 WriteReadDummy(benchmarkRunner, operations, random);
                                 Interlocked.Increment(ref currentCount);
                             }
-                            catch
+                            catch(Exception e)
                             {
                                 Interlocked.Increment(ref failedCount);
                                 Interlocked.Increment(ref currentCount);
+                                Trace.WriteLine(e.ToString());
                             }
                         }
                     );
@@ -226,6 +227,8 @@ namespace NoSqlBenchmarking
             Console.WriteLine("Failed count: " + failedCount);
             
         }
+
+        
 
         private static void WriteReadDummy(IBenchmark benchmarkRunner, BenchmarkOperation operations, Random random)
         {

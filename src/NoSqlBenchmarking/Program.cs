@@ -109,13 +109,28 @@ namespace NoSqlBenchmarking
 			benchmarkRunner.Init();
 			var stopwatch = new Stopwatch();
 			var random = new Random();
+
+
 			Console.ForegroundColor = ConsoleColor.DarkGreen;
 			Console.WriteLine("Starting benchmark with " + benchmarker);
 			Console.ForegroundColor = ConsoleColor.DarkYellow;
+
+            ThreadPool.SetMinThreads(concurrency, 100);
+            ThreadPool.SetMaxThreads(concurrency, 100);
+
+            Console.Write("Warming up");
+            for (int i = 0; i < concurrency; i++)
+            {
+                ThreadPool.QueueUserWorkItem((o) => Console.Write("."));
+            }
+            Thread.Sleep(2000);
+
+            Console.WriteLine("it should be OK now.");
+
 			stopwatch.Start();
 
             if(concurrency>0)
-                WriteReadNTimesAsync(n, benchmarkRunner, operations, gatherStatistics, stopwatch, writer, concurrency);
+                WriteReadNTimesAsync(n, benchmarkRunner, operations, gatherStatistics, stopwatch, writer);
             else
                 WriteReadNTimes(n, benchmarkRunner, operations, gatherStatistics, stopwatch, writer);
 
@@ -134,29 +149,15 @@ namespace NoSqlBenchmarking
 			}
 		}
 
-        private static void WriteReadNTimesAsync(int n, IBenchmark benchmarkRunner,
+        private static void WriteReadNTimes(int n, IBenchmark benchmarkRunner,
             BenchmarkOperation operations, bool gatherStatistics, 
-            Stopwatch stopwatch, StreamWriter writer, int concurrency
+            Stopwatch stopwatch, StreamWriter writer
             )
         {
             var random = new Random();
             double totalMilliseconds = 0;
 
-            ThreadPool.SetMinThreads(concurrency, 100);
-            ThreadPool.SetMaxThreads(concurrency, 100);
-
-            Console.Write("Warming up");
-            for (int i = 0; i < concurrency; i++)
-            {
-                ThreadPool.QueueUserWorkItem((o) => Console.Write("."));
-            }
-            Thread.Sleep(2000);
-
-            Console.WriteLine("it should be OK now.");
-
-
-
-
+ 
             for (int i = 1; i <= n; i++)
             {
                 WriteReadDummy(benchmarkRunner, operations, random);
@@ -179,9 +180,9 @@ namespace NoSqlBenchmarking
             }
         }
 
-        private static void WriteReadNTimes(int n, IBenchmark benchmarkRunner,
-       BenchmarkOperation operations, bool gatherStatistics,
-       Stopwatch stopwatch, StreamWriter writer
+        private static void WriteReadNTimesAsync(int n, IBenchmark benchmarkRunner,
+           BenchmarkOperation operations, bool gatherStatistics,
+           Stopwatch stopwatch, StreamWriter writer
        )
         {
             var random = new Random();
@@ -217,7 +218,7 @@ namespace NoSqlBenchmarking
                 if(currentCount == n)
                     break;
             }
-
+            Console.WriteLine();
             Console.WriteLine("Failed count: " + failedCount);
             
         }

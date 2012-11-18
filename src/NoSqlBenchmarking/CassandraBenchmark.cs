@@ -6,7 +6,7 @@ using FluentCassandra;
 
 namespace NoSqlBenchmarking
 {
-	class CassandraBenchmark : IBenchmark
+	class CassandraBenchmark : IBenchmarkDummy
 	{
 		private const string DummiesKeySpace = "DummiesKeyspace2";
 

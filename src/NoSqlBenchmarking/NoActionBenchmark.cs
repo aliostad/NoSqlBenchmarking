@@ -5,7 +5,7 @@ using System.Text;
 
 namespace NoSqlBenchmarking
 {
-	class NoActionBenchmark : IBenchmark
+	class NoActionBenchmark : IBenchmarkDummy
 	{
 		public void Init()
 		{

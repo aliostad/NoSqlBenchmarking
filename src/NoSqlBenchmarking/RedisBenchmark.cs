@@ -6,7 +6,7 @@ using BookSleeve;
 
 namespace NoSqlBenchmarking
 {
-	class RedisBenchmark : IBenchmark
+	class RedisBenchmark : IBenchmarkDummy
 	{
 
 		private RedisConnection _connection;

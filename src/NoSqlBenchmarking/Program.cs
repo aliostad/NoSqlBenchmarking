@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using NoSqlBenchmarking.Imdb;
 
 namespace NoSqlBenchmarking
 {
@@ -14,7 +15,22 @@ namespace NoSqlBenchmarking
         private static int currentCount = 0;
         private static int failedCount = 0;
 
-        static void Main(string[] args)
+		static void Mainc()
+		{
+			var directorsListReader = new DirectorsListReader("data\\directors.list");
+			Director director;
+			int i = 0;
+			while (directorsListReader.Read(out director))
+			{
+				i++;
+				if(i%1000==0)
+					Console.Write("\r" + i);
+				//Console.WriteLine(director);
+			}
+			Console.Read();
+		}
+
+    	static void Main(string[] args)
         {
         	while (true)
         	{
@@ -25,7 +41,7 @@ namespace NoSqlBenchmarking
 4) Redis
 5) SQL Server
 ", 1);
-				IBenchmark benchmark = null;
+				IBenchmarkDummy benchmark = null;
 				switch (store)
 				{
 					case 1:
@@ -95,7 +111,7 @@ namespace NoSqlBenchmarking
 
 		}
 
-		private static void Test(IBenchmark benchmarkRunner, int n,
+		private static void Test(IBenchmarkDummy benchmarkRunner, int n,
 			BenchmarkOperation operations = BenchmarkOperation.Insert | BenchmarkOperation.Get | BenchmarkOperation.GetNonExistent,
 			bool gatherStatistics = false, int concurrency = 50)
 		{
@@ -149,7 +165,7 @@ namespace NoSqlBenchmarking
 			}
 		}
 
-        private static void WriteReadNTimes(int n, IBenchmark benchmarkRunner,
+        private static void WriteReadNTimes(int n, IBenchmarkDummy benchmarkRunner,
             BenchmarkOperation operations, bool gatherStatistics, 
             Stopwatch stopwatch, StreamWriter writer
             )
@@ -180,7 +196,7 @@ namespace NoSqlBenchmarking
             }
         }
 
-        private static void WriteReadNTimesAsync(int n, IBenchmark benchmarkRunner,
+        private static void WriteReadNTimesAsync(int n, IBenchmarkDummy benchmarkRunner,
            BenchmarkOperation operations, bool gatherStatistics,
            Stopwatch stopwatch, StreamWriter writer
        )
@@ -230,7 +246,7 @@ namespace NoSqlBenchmarking
 
         
 
-        private static void WriteReadDummy(IBenchmark benchmarkRunner, BenchmarkOperation operations, Random random)
+        private static void WriteReadDummy(IBenchmarkDummy benchmarkRunner, BenchmarkOperation operations, Random random)
         {
 
             var d = new Dummy()

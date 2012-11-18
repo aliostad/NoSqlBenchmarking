@@ -8,7 +8,7 @@ using System.Text;
 
 namespace NoSqlBenchmarking
 {
-	class SqlServerBenchmark : IBenchmark
+	class SqlServerBenchmark : IBenchmarkDummy
 	{
 
 		private SqlConnection _connection = new SqlConnection(ConfigurationManager.ConnectionStrings["Benchmark"].ConnectionString);
